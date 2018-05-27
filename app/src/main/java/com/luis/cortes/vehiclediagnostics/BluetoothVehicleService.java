@@ -177,6 +177,7 @@ public class BluetoothVehicleService {
             int bytes;
 
             // Keep listening to the InputStream while connected
+            // TODO: change this condition to check for state
             while (true) {
                 try {
                     // Read from the InputStream
