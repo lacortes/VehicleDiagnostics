@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Handler;
@@ -21,7 +22,10 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -33,6 +37,8 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter mBtAdapter = null;
     private BluetoothVehicleService mBtService;
     private Handler mHandler;
+    private Executor mExecutor;
+    private ArrayList<CommandJob> mCommandJobs;
 
     // Views
     private int progressStatus = 0;
@@ -55,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                sendOBD2CMD("010C");
+                // sendOBD2CMD("010C", Response.RPM);
             }
         });
 
@@ -67,25 +73,25 @@ public class MainActivity extends AppCompatActivity {
                     switch (msg.what) {
                         case Constants.MESSAGE_READ:
                             byte[] readBuf = (byte[]) msg.obj;
-                            String readMessage = new String(readBuf, 0, msg.arg1);
+
+                            String readMessage = new String(readBuf, 0, msg.arg2);
                             readMessage = readMessage.trim();
 
-                            ResponseBuffer respBuffer = ResponseBuffer.getInstance();
-                            respBuffer.addResponse(readMessage);
+                            int respType = -1;
+                            respType = msg.arg1;
 
-                            Log.i(TAG, "Buffer STATE: " + respBuffer);
-
-                            if (respBuffer.isComplete()) {
-                                String response = respBuffer.getResponse();
-
-                                // construct a string from the valid bytes in the buffer
-                                textBoxOut.setText(response);
-                                double val = showEngineRPM(response);
-
-                                valueTextView.setText(val+"");
-
-                                Log.i(TAG, "READ: **" + response + "**");
-                                Toast.makeText(getApplicationContext(), "READ:  "+"**"+response+"**", Toast.LENGTH_SHORT).show();
+                            switch (respType) {
+                                case Constants.RESPONSE_RPM:
+                                    // Show rpm
+                                    Response response = (Response) msg.obj;
+                                    Double value = VehStats.getValue(response, new Formula() {
+                                        @Override
+                                        public double calculate(int a, int b, int c, int d) {
+                                            return  ((a * 256.00) + b) / 4.00;
+                                        }
+                                    });
+                                    valueTextView.setText(value+"");
+                                    break;
                             }
                             break;
                         case Constants.MESSAGE_WRITE:
@@ -98,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
                             switch (msg.arg1) {
                                 case BluetoothVehicleService.STATE_CONNECTED:
                                     // Send Default commands
-                                    sendOBD2CMD("AT SP 0");
+                                    // sendOBD2CMD("AT SP 0", Response.NONE);
                                     Toast.makeText(getApplicationContext(), "sending init commands", Toast.LENGTH_SHORT).show();
                                     break;
                             }
@@ -125,18 +131,20 @@ public class MainActivity extends AppCompatActivity {
         BluetoothDevice device = getPaired();
         if (device != null) {
             // Connect to bluetooth dongle
-            Log.i(TAG, "Connecting");
-//            BluetoothConnection connection = new BluetoothConnection(device, Constants.ELM_DONGLE_SERVICE, mBtAdapter);
-//            connection.start();
+            Log.i(TAG, "Connecting to Dongle");
 
             mBtService = new BluetoothVehicleService(getApplicationContext(), mHandler);
             Toast.makeText(getApplicationContext(), "Connecting to Dongle", Toast.LENGTH_LONG).show();
             mBtService.connect(device);
 
-//           byte[] bytes = {0x7d, (byte)0xf0, 0x20, 0x10, (byte)0xd5, 0x55, 0x55, 0x55, 0x05 };
-//
-//            btService.write(bytes);
+            BluetoothSocket socket = mBtService.getSocket();
 
+            mCommandJobs = new ArrayList<>();
+
+            // Add commands
+            mCommandJobs.add(new CommandJob(socket, new RpmCommand(mHandler)));
+
+            mExecutor = Executors.newFixedThreadPool(mCommandJobs.size());
 
         } else {
             // scan
@@ -177,12 +185,6 @@ public class MainActivity extends AppCompatActivity {
         createAlertDialog("Bluetooth", msg);
     }
 
-//    private void showDialog() {
-//        FragmentManager manager = getSupportFragmentManager();
-//        ChooseDeviceFragment dialog = ChooseDeviceFragment.newInstance();
-//        dialog.show(manager, NEW_ANNOUNCEMENT  );
-//    }
-
     /**
      *  Query already paired devices and look for ELM-327 dongle; return it if found, null otherwise.
      * @return BluetoothDevice
@@ -199,15 +201,6 @@ public class MainActivity extends AppCompatActivity {
                 String deviceHardwareAddress = device.getAddress(); // MAC address
                 ParcelUuid[] uuid = device.getUuids();
 
-                Log.i(TAG, "\n***************");
-                Log.i(TAG, deviceName);
-                Log.i(TAG, device.toString());
-
-                for (ParcelUuid id : uuid) {
-                    Log.i(TAG, "**"+id.toString()+"**\n");
-                }
-                Log.i(TAG, "***************\n\n");
-
                 if (deviceHardwareAddress.equalsIgnoreCase(ELM_ADDRESS)) {
                     Log.i(TAG, "FOUND DONGLE");
                     return device;
@@ -215,52 +208,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         return null;
-    }
-
-    private void sendOBD2CMD(String sendMsg)
-    {
-        String strCMD = sendMsg;
-        strCMD += '\r';
-
-        byte[] byteCMD = strCMD.getBytes();
-        mBtService.write(byteCMD);
-    }
-
-    private double showEngineRPM(String buffer)
-    {
-        String buf = buffer;
-        buf = cleanResponse(buf);
-
-        if (buf.contains("410C"))
-        {
-            try
-            {
-                buf = buf.substring(buf.indexOf("410C"));
-
-                String MSB = buf.substring(4, 6);
-                String LSB = buf.substring(6, 8);
-                int A = Integer.valueOf(MSB, 16);
-                int B = Integer.valueOf(LSB, 16);
-
-                return  ((A * 256.00) + B) / 4.00;
-            }
-            catch (IndexOutOfBoundsException | NumberFormatException e)
-            {
-                Log.i(TAG, e.getMessage());
-            }
-        }
-
-        return -1;
-    }
-
-    private String cleanResponse(String text)
-    {
-        text = text.trim();
-        text = text.replace("\t", "");
-        text = text.replace(" ", "");
-        text = text.replace(">", "");
-
-        return text;
     }
 
     private void createAlertDialog(String title, String message) {
@@ -278,16 +225,5 @@ public class MainActivity extends AppCompatActivity {
         });
         AlertDialog alert = alertBuilder.create();
         alert.show();
-    }
-
-    public String bytesToHex(byte[] bytes) {
-        String x = "[ ";
-        for (byte info : bytes) {
-            Log.i(TAG, Integer.toHexString(info) +"  ");
-            x += ""+Integer.toHexString(info & 0xFF);
-            x += " ";
-        }
-        x += "]";
-        return x;
     }
 }

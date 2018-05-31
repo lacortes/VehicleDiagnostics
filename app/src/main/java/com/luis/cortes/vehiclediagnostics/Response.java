@@ -1,24 +1,33 @@
 package com.luis.cortes.vehiclediagnostics;
 
+import android.util.Log;
+
+import java.util.TreeMap;
+import java.util.regex.Pattern;
+
 public class Response {
-    // Response Header Mode
-    public static final String rpm = "0C";
+    public static final String TAG = "Response.class";
 
-    public enum ResponseType {
-        RPM, SPEED
-    }
+    private static Pattern WHITESPACE_PATTERN = Pattern.compile("\\s");
+    private static Pattern BUSINIT_PATTERN = Pattern.compile("(BUS INIT)|(BUSINIT)|(\\.)");
+    private static Pattern SEARCHING_PATTERN = Pattern.compile("SEARCHING");
+    private static Pattern DIGITS_LETTERS_PATTERN = Pattern.compile("([0-9A-F])+");
 
-    private String[] validResponseModes = {"41", "42", "43", "44", "45", "46", "47", "48", "49", "4A"};
+    // Response Header PID
+    public static final String NONE = "";
+    public static final String RPM = "0C";
+
+    private String[] validResponseModes = {"41"};
     private String response;
     private int mode;
-    private int A;
-    private int B;
-    private int C;
-    private int D;
-    private ResponseType type;
+    private int A = 0;
+    private int B = 0;
+    private int C = 0;
+    private int D = 0;
+    private String pidType;
 
-    public Response(String buffer, ResponseType type) {
-        this.type = type;
+    public Response(StringBuilder buffer, String pidType) {
+        this.pidType = pidType;
         this.response = cleanResponse(buffer);
         extractFields(response);
     }
@@ -39,15 +48,24 @@ public class Response {
         return D;
     }
 
-    private String cleanResponse(String text) {
-        text = text.trim();
-        text = text.replace("\t", "");
-        text = text.replace(" ", "");
-        text = text.replace(">", "");
+    public byte[] getByteResponse() {
+        return this.response.getBytes();
+    }
 
-        if (isValidMode(text)) {
+    public int respByteLen() {
+        return this.response.getBytes().length;
+    }
+
+    private String cleanResponse(StringBuilder text) {
+        String rawData = removeAll(SEARCHING_PATTERN, text.toString());
+        rawData = removeAll(WHITESPACE_PATTERN, rawData); //removes all [ \t\n\x0B\f\r]
+        rawData = removeAll(BUSINIT_PATTERN, rawData);
+
+        Log.i(TAG, "FILTERED RESPONSE: "+rawData);
+
+        if (isValidMode(rawData)) {
             // Substring starting with mode and pid. Ex: "410D"
-            return text.substring(text.indexOf(this.validResponseModes[mode] + getResponsePID(this.type)));
+            return text.substring(text.indexOf(this.validResponseModes[mode] + pidType));
         }
 
         return "";
@@ -87,23 +105,22 @@ public class Response {
 
     }
 
-    private String getResponsePID(ResponseType type) {
-        switch (type) {
-            case RPM:
-                return rpm;
-            case SPEED:
-                break;
-        }
-        return "";
-    }
-
     private boolean isValidMode(String text) {
         for (int i = 0; i < this.validResponseModes.length; i++) {
             if (text.contains(this.validResponseModes[i])) {
                 this.mode = i;
+                Log.i(TAG, "Found Mode: " + validResponseModes[i]);
                 return true;
             }
         }
         return false;
+    }
+
+    private String replaceAll(Pattern pattern, String input, String replacement) {
+        return pattern.matcher(input).replaceAll(replacement);
+    }
+
+    private String removeAll(Pattern pattern, String input) {
+        return pattern.matcher(input).replaceAll("");
     }
 }

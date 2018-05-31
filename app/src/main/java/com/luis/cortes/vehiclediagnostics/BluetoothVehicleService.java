@@ -13,6 +13,7 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.TreeMap;
 
 
 /**
@@ -34,6 +35,7 @@ public class BluetoothVehicleService {
     private StreamThread mStreamThread;
     private int mState;
     private int mNewState;
+    private BluetoothSocket mSocket;
 
     public BluetoothVehicleService(Context context, Handler handler) {
         this.mContext = context;
@@ -48,6 +50,9 @@ public class BluetoothVehicleService {
         mConnectThread.start();
     }
 
+    public BluetoothSocket getSocket() {
+        return this.mSocket;
+    }
 
     public void stream(BluetoothSocket socket, BluetoothDevice device) {
         // Start the thread to manage the connection and perform transmissions
@@ -62,12 +67,12 @@ public class BluetoothVehicleService {
      *
      * @param out The bytes to write
      */
-    public void write(byte[] out) {
+    public void write(byte[] out, String type) {
         // Create temporary object
         StreamThread r = mStreamThread;
 
         // Perform the write unsynchronized
-        r.write(out);
+        r.write(out, type);
     }
 
     public int getState() {
@@ -134,7 +139,8 @@ public class BluetoothVehicleService {
 
             // Start the connected thread
             // connected(mmDeviceSocket, mmDevice);
-            stream(mmDeviceSocket, mmDevice);
+            mSocket = mmDeviceSocket;
+            // stream(mmDeviceSocket, mmDevice);
         }
 
         public void cancel() {
@@ -200,14 +206,14 @@ public class BluetoothVehicleService {
          * Write to the connected OutStream.
          * @param buffer The bytes to write
          */
-        public void write(byte[] buffer) {
+        public void write(byte[] buffer, String type) {
             try {
                 mmOutStream.write(buffer);
+                mmOutStream.flush();
 
                 // Share the sent message back to the UI Activity
 
-//                mHandler.obtainMessage(Constants.MESSAGE_READ, buffer).sendToTarget();
-                mHandler.obtainMessage(Constants.MESSAGE_WRITE, -1, -1, buffer).sendToTarget();
+                mHandler.obtainMessage(Constants.MESSAGE_WRITE, type.hashCode(), -1, buffer).sendToTarget();
             } catch (IOException e) {
                 Log.i(TAG, "Exception during write", e);
             }
