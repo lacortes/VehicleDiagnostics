@@ -38,6 +38,7 @@ public abstract class ObdCommand {
 
     public void sendCommand(OutputStream outputStream) {
         try {
+            Log.i(TAG, "Sending: "+cmd);
             byte[] buffer = (cmd + "\r").getBytes();
             outputStream.write(buffer);
             outputStream.flush();
@@ -71,6 +72,7 @@ public abstract class ObdCommand {
         char c;
         // -1 if the end of the stream is reached
         try {
+            Log.i(TAG, "Reading in data ... ");
             while (((b = (byte) in.read()) > -1)) {
                 c = (char) b;
                 if (c == '>') // read until '>' arrives

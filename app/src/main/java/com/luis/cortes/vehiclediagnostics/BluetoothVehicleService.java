@@ -26,6 +26,8 @@ public class BluetoothVehicleService {
     public static final int STATE_LISTEN = 1;     // now listening for incoming connections
     public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
+    public static final int STATE_BT_SOCKET_AVAILABLE = 4; // Bt socket available
+    public static final int STATE_BT_SOCKET_ERROR = 5; // Problem connecting to socket
 
     private static final String TAG = "BluetoothVehicleService";
     private final BluetoothAdapter mAdapter;
@@ -48,6 +50,10 @@ public class BluetoothVehicleService {
     public void connect(BluetoothDevice device) {
         mConnectThread = new ConnectThread(device);
         mConnectThread.start();
+    }
+
+    public boolean hasSocket() {
+        return mSocket != null;
     }
 
     public BluetoothSocket getSocket() {
@@ -140,6 +146,11 @@ public class BluetoothVehicleService {
             // Start the connected thread
             // connected(mmDeviceSocket, mmDevice);
             mSocket = mmDeviceSocket;
+            if (hasSocket()) {
+                mHandler.obtainMessage(STATE_BT_SOCKET_AVAILABLE, -1, -1, mSocket).sendToTarget();
+            } else {
+                mHandler.obtainMessage(STATE_BT_SOCKET_ERROR, -1, -1).sendToTarget();
+            }
             // stream(mmDeviceSocket, mmDevice);
         }
 

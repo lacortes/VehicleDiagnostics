@@ -32,7 +32,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "MainActivity.class";
 
     private final int REQUEST_ENABLE_BT = 1;
     private final String ELM_ADDRESS = "00:1D:A5:00:C1:3C";
@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private Handler mHandler;
     private Executor mExecutor;
     private ArrayList<CommandJob> mCommandJobs;
+    private BluetoothSocket mSocket;
 
     // Views
     private int progressStatus = 0;
@@ -114,6 +115,25 @@ public class MainActivity extends AppCompatActivity {
                                     break;
                             }
                             break;
+                        case BluetoothVehicleService.STATE_BT_SOCKET_AVAILABLE:
+                            // Init commands
+                            mCommandJobs = new ArrayList<>();
+
+                            BluetoothSocket socket = (BluetoothSocket) msg.obj;
+
+                            // Add commands
+                            Log.i(TAG, "Init commands ... ");
+                            mCommandJobs.add(new CommandJob(socket, new AutoProtocolCommand(mHandler)));
+                            mCommandJobs.add(new CommandJob(socket, new EchoOffCommand(mHandler)));
+                            mCommandJobs.add(new CommandJob(socket, new RpmCommand(mHandler)));
+
+                            mExecutor = Executors.newFixedThreadPool(mCommandJobs.size());
+
+                            for (CommandJob job : mCommandJobs) {
+                                mExecutor.execute(job);
+                            }
+
+                            break;
                     }
                 }
             }
@@ -142,28 +162,11 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(), "Connecting to Dongle", Toast.LENGTH_LONG).show();
             mBtService.connect(device);
 
-            BluetoothSocket socket = mBtService.getSocket();
-            mCommandJobs = new ArrayList<>();
-
-            // Add commands
-            Log.i(TAG, "Init commands ... ");
-            mCommandJobs.add(new CommandJob(socket, new AutoProtocolCommand(mHandler)));
-            mCommandJobs.add(new CommandJob(socket, new EchoOffCommand(mHandler)));
-
-            try {
-                Log.i(TAG, "Pausing ...");
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            mCommandJobs.add(new CommandJob(socket, new RpmCommand(mHandler)));
-
-            mExecutor = Executors.newFixedThreadPool(mCommandJobs.size());
+            mSocket = mBtService.getSocket();
 
         } else {
             // scan
-            Log.i(TAG, "NOTHING!");
+            Log.i(TAG, "No device paired.");
         }
     }
 
