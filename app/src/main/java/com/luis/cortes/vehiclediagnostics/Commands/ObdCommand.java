@@ -1,7 +1,10 @@
-package com.luis.cortes.vehiclediagnostics;
+package com.luis.cortes.vehiclediagnostics.Commands;
 
 import android.os.Handler;
 import android.util.Log;
+
+import com.luis.cortes.vehiclediagnostics.Constants;
+import com.luis.cortes.vehiclediagnostics.Response;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,7 +49,7 @@ public abstract class ObdCommand {
         }
     }
 
-    public void seAsProtocol(boolean isProtocol) {
+    public void setAsProtocol(boolean isProtocol) {
         this.isProtocol = isProtocol;
     }
 

@@ -16,6 +16,8 @@ public class Response {
     // Response Header PID
     public static final String NONE = "";
     public static final String RPM = "0C";
+    public static final String AUTO = "AUTO";
+    public static final String ECHO_OFF = "ECHO_OFF";
 
     private String[] validResponseModes = {"41"};
     private String response;

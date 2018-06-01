@@ -1,6 +1,10 @@
-package com.luis.cortes.vehiclediagnostics;
+package com.luis.cortes.vehiclediagnostics.Commands;
 
 import android.os.Handler;
+
+import com.luis.cortes.vehiclediagnostics.Commands.ObdCommand;
+import com.luis.cortes.vehiclediagnostics.Constants;
+import com.luis.cortes.vehiclediagnostics.Response;
 
 public class RpmCommand extends ObdCommand {
 

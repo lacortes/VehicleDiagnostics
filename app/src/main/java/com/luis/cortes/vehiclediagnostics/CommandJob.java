@@ -2,6 +2,8 @@ package com.luis.cortes.vehiclediagnostics;
 
 import android.bluetooth.BluetoothSocket;
 
+import com.luis.cortes.vehiclediagnostics.Commands.ObdCommand;
+
 import java.io.IOException;
 
 public class CommandJob implements Runnable {

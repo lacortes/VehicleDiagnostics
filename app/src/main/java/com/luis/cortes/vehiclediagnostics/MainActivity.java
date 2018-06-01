@@ -22,6 +22,10 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.luis.cortes.vehiclediagnostics.Commands.AutoProtocolCommand;
+import com.luis.cortes.vehiclediagnostics.Commands.EchoOffCommand;
+import com.luis.cortes.vehiclediagnostics.Commands.RpmCommand;
+
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -72,17 +76,18 @@ public class MainActivity extends AppCompatActivity {
                 if (msg  != null) {
                     switch (msg.what) {
                         case Constants.MESSAGE_READ:
-                            byte[] readBuf = (byte[]) msg.obj;
-
-                            String readMessage = new String(readBuf, 0, msg.arg2);
-                            readMessage = readMessage.trim();
-
+//                            byte[] readBuf = (byte[]) msg.obj;
+//
+//                            String readMessage = new String(readBuf, 0, msg.arg2);
+//                            readMessage = readMessage.trim();
+//
                             int respType = -1;
                             respType = msg.arg1;
 
                             switch (respType) {
                                 case Constants.RESPONSE_RPM:
                                     // Show rpm
+                                    Log.i(TAG, "Reading RPM ... ");
                                     Response response = (Response) msg.obj;
                                     Double value = VehStats.getValue(response, new Formula() {
                                         @Override
@@ -138,10 +143,20 @@ public class MainActivity extends AppCompatActivity {
             mBtService.connect(device);
 
             BluetoothSocket socket = mBtService.getSocket();
-
             mCommandJobs = new ArrayList<>();
 
             // Add commands
+            Log.i(TAG, "Init commands ... ");
+            mCommandJobs.add(new CommandJob(socket, new AutoProtocolCommand(mHandler)));
+            mCommandJobs.add(new CommandJob(socket, new EchoOffCommand(mHandler)));
+
+            try {
+                Log.i(TAG, "Pausing ...");
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
             mCommandJobs.add(new CommandJob(socket, new RpmCommand(mHandler)));
 
             mExecutor = Executors.newFixedThreadPool(mCommandJobs.size());
