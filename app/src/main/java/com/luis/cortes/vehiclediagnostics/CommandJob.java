@@ -6,7 +6,7 @@ import com.luis.cortes.vehiclediagnostics.Commands.ObdCommand;
 
 import java.io.IOException;
 
-public class CommandJob implements Runnable {
+public class CommandJob extends Thread {
     private BluetoothSocket socket;
     private ObdCommand obdCommand;
 

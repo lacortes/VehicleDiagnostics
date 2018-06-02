@@ -28,6 +28,7 @@ import com.luis.cortes.vehiclediagnostics.Commands.RpmCommand;
 
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -43,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
     private Handler mHandler;
     private Executor mExecutor;
     private ArrayList<CommandJob> mCommandJobs;
-    private BluetoothSocket mSocket;
+    private ConcurrentLinkedDeque<CommandJob> mCommandList;
 
     // Views
     private int progressStatus = 0;
@@ -90,6 +91,13 @@ public class MainActivity extends AppCompatActivity {
                                     // Show rpm
                                     Log.i(TAG, "Reading RPM ... ");
                                     Response response = (Response) msg.obj;
+                                    Log.i(TAG, response.getResponse());
+
+                                    Log.i(TAG, "A: "+response.getA());
+                                    Log.i(TAG, "B: "+response.getB());
+                                    Log.i(TAG, "C: "+response.getC());
+                                    Log.i(TAG, "D: "+response.getD());
+
                                     Double value = VehStats.getValue(response, new Formula() {
                                         @Override
                                         public double calculate(int a, int b, int c, int d) {
@@ -118,19 +126,31 @@ public class MainActivity extends AppCompatActivity {
                         case BluetoothVehicleService.STATE_BT_SOCKET_AVAILABLE:
                             // Init commands
                             mCommandJobs = new ArrayList<>();
+                            mCommandList = new ConcurrentLinkedDeque<>();
 
                             BluetoothSocket socket = (BluetoothSocket) msg.obj;
 
                             // Add commands
                             Log.i(TAG, "Init commands ... ");
-                            mCommandJobs.add(new CommandJob(socket, new AutoProtocolCommand(mHandler)));
-                            mCommandJobs.add(new CommandJob(socket, new EchoOffCommand(mHandler)));
-                            mCommandJobs.add(new CommandJob(socket, new RpmCommand(mHandler)));
+//                            mCommandJobs.add(new CommandJob(socket, new AutoProtocolCommand(mHandler)));
+//                            mCommandJobs.add(new CommandJob(socket, new EchoOffCommand(mHandler)));
+//                            mCommandJobs.add(new CommandJob(socket, new RpmCommand(mHandler)));
 
-                            mExecutor = Executors.newFixedThreadPool(mCommandJobs.size());
+                            mCommandList.add(new CommandJob(socket, new AutoProtocolCommand(mHandler)));
+                            mCommandList.add(new CommandJob(socket, new RpmCommand(mHandler)));
+                            mCommandList.add(new CommandJob(socket, new RpmCommand(mHandler)));
+//                            mCommandList.add(new CommandJob(socket, new EchoOffCommand(mHandler)));
 
-                            for (CommandJob job : mCommandJobs) {
-                                mExecutor.execute(job);
+//                            mExecutor = Executors.newFixedThreadPool(mCommandJobs.size());
+
+//                            for (CommandJob job : mCommandJobs) {
+//                                mExecutor.execute(job);
+//                            }
+
+                            while (mCommandList.size() > 0) {
+                                CommandJob job =  mCommandList.poll();
+                                job.start();
+//                                mCommandList.add(job);
                             }
 
                             break;
@@ -162,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(), "Connecting to Dongle", Toast.LENGTH_LONG).show();
             mBtService.connect(device);
 
-            mSocket = mBtService.getSocket();
+//            mSocket = mBtService.getSocket();
 
         } else {
             // scan

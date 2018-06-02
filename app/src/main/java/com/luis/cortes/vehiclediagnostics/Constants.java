@@ -17,6 +17,7 @@ public interface Constants {
     public static final int MESSAGE_WRITE = 3;
 
     public static final int RESPONSE_RPM = 10;
+    public static final int RESPONSE_NA = 11;
 
     static final String MESSAGE_TEST = "TESTING_MSG";
 }

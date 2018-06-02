@@ -57,7 +57,7 @@ public abstract class ObdCommand {
     abstract void shareToHandler(Handler handler, int messageType, int messageLen, Response response);
 
     protected void shareToHandler(Handler handler, int messageType, int messageLen, byte[] message) {
-        handler.obtainMessage(messageType, Constants.RESPONSE_RPM , messageLen, message).sendToTarget();
+        handler.obtainMessage(messageType, Constants.RESPONSE_NA , messageLen, message).sendToTarget();
     }
 
     private void readResult(InputStream inputStream) {
@@ -72,6 +72,7 @@ public abstract class ObdCommand {
         char c;
         // -1 if the end of the stream is reached
         try {
+            Log.i(TAG, "***\n");
             Log.i(TAG, "Reading in data ... ");
             while (((b = (byte) in.read()) > -1)) {
                 c = (char) b;
@@ -81,6 +82,8 @@ public abstract class ObdCommand {
                 }
                 res.append(c);
             }
+            Log.i(TAG, res.toString());
+            Log.i(TAG, "***\n");
 
             if (isProtocol) {return;}
 
