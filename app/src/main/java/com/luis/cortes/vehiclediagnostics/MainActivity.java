@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // sendOBD2CMD("010C", Response.RPM);
+                connectToDongle();
             }
         });
 
@@ -160,28 +160,7 @@ public class MainActivity extends AppCompatActivity {
             finish();
         }
 
-        // Enable Bluetooth if not on
-        if (!mBtAdapter.isEnabled()) {
-            Log.d(TAG, "Request to use bluetooth");
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-        }
 
-        BluetoothDevice device = getPaired();
-        if (device != null) {
-            // Connect to bluetooth dongle
-            Log.i(TAG, "Connecting to Dongle");
-
-            mBtService = new BluetoothVehicleService(getApplicationContext(), mHandler);
-            Toast.makeText(getApplicationContext(), "Connecting to Dongle", Toast.LENGTH_LONG).show();
-            mBtService.connect(device);
-
-//            mSocket = mBtService.getSocket();
-
-        } else {
-            // scan
-            Log.i(TAG, "No device paired.");
-        }
     }
 
     @Override
@@ -271,6 +250,29 @@ public class MainActivity extends AppCompatActivity {
         });
         AlertDialog alert = alertBuilder.create();
         alert.show();
+    }
+
+    private void connectToDongle() {
+        // Enable Bluetooth if not on
+        if (!mBtAdapter.isEnabled()) {
+            Log.d(TAG, "Request to use bluetooth");
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+        }
+
+        BluetoothDevice device = getPaired();
+        if (device != null) {
+            // Connect to bluetooth dongle
+            Log.i(TAG, "Connecting to Dongle");
+
+            mBtService = new BluetoothVehicleService(getApplicationContext(), mHandler);
+            Toast.makeText(getApplicationContext(), "Connecting to Dongle", Toast.LENGTH_LONG).show();
+            mBtService.connect(device);
+
+        } else {
+            // TODO: Scan for devices
+            Log.i(TAG, "No device paired.");
+        }
     }
 
     private void displayRespToLogcat(Response response) {
