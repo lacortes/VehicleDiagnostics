@@ -71,6 +71,10 @@ public abstract class ObdCommand {
         }
     }
 
+    public String getCommandType() {
+        return this.pidType;
+    }
+
     public void setAsProtocol(boolean isProtocol) {
         this.isProtocol = isProtocol;
     }

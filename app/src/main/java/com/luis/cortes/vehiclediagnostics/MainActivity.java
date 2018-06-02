@@ -23,17 +23,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.luis.cortes.vehiclediagnostics.Commands.AutoProtocolCommand;
-import com.luis.cortes.vehiclediagnostics.Commands.EchoOffCommand;
 import com.luis.cortes.vehiclediagnostics.Commands.RpmCommand;
 import com.luis.cortes.vehiclediagnostics.Commands.Throttle;
 import com.luis.cortes.vehiclediagnostics.Commands.VehicleSpeedCommand;
 
 import java.util.ArrayList;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class MainActivity extends AppCompatActivity {
@@ -46,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter mBtAdapter = null;
     private BluetoothVehicleService mBtService;
     private Handler mHandler;
-    private Executor mExecutor;
     private ArrayList<CommandJob> mCommandJobs;
     private LinkedBlockingQueue<CommandJob> mCommandList;
 
@@ -54,7 +48,8 @@ public class MainActivity extends AppCompatActivity {
     private int progressStatus = 0;
     private TextView textBoxOut;
     private TextView sendTextView;
-    private TextView valueTextView;
+    private TextView rpmTextView;
+    private TextView speedTextView;
     private Button sendButton;
 
     @Override
@@ -65,7 +60,8 @@ public class MainActivity extends AppCompatActivity {
         // Hook up Views
         textBoxOut =  (TextView) findViewById(R.id.text_view);
         sendTextView = (TextView) findViewById(R.id.send_text_view);
-        valueTextView =  (TextView) findViewById(R.id.value_text_view);
+        rpmTextView =  (TextView) findViewById(R.id.value_rpm_text_view);
+        speedTextView = (TextView) findViewById(R.id.value_speed_text_view);
         sendButton = (Button) findViewById(R.id.send_button);
 
         sendButton.setOnClickListener(new View.OnClickListener() {
@@ -79,87 +75,80 @@ public class MainActivity extends AppCompatActivity {
         mHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
-                if (msg  != null) {
-                    switch (msg.what) {
-                        case Constants.MESSAGE_READ:
-//                            byte[] readBuf = (byte[]) msg.obj;
-//
-//                            String readMessage = new String(readBuf, 0, msg.arg2);
-//                            readMessage = readMessage.trim();
-//
-                            int respType = -1;
-                            respType = msg.arg1;
+                switch (msg.what) {
+                    case Constants.MESSAGE_READ:
+                        int respType = -1;
 
-                            switch (respType) {
-                                case Constants.RESPONSE_RPM:
-                                    // Show rpm
-                                    Log.i(TAG, "Reading RPM ... ");
-                                    Response response = (Response) msg.obj;
-                                    Log.i(TAG, response.getResponse());
+                        respType = msg.arg1;
+                        Response response = (Response) msg.obj;
 
-                                    Log.i(TAG, "A: "+response.getA());
-                                    Log.i(TAG, "B: "+response.getB());
-                                    Log.i(TAG, "C: "+response.getC());
-                                    Log.i(TAG, "D: "+response.getD());
+                        switch (respType) {
+                            case Constants.RESPONSE_RPM:
+                                // Show rpm
+                                Log.i(TAG, "Reading RPM ... ");
+                                displayRespToLogcat(response);
+                                Double rpm = VehStats.getValue(response, new Formula() {
+                                    @Override
+                                    public double calculate(int a, int b, int c, int d) {
+                                        return ((a * 256.00) + b) / 4.00;
+                                    }
+                                });
+                                rpmTextView.setText(rpm + "");
+                                break;
+                            case Constants.RESPONSE_SPEED:
+                                Log.i(TAG, "Reading Speed ... ");
+                                Double speed = VehStats.getValue(response, new Formula() {
+                                    @Override
+                                    public double calculate(int a, int b, int c, int d) {
+                                        // 1 km = 0.621371 m
+                                        return a * 0.621371;
+                                    }
+                                });
+                                speedTextView.setText(speed + "");
+                                break;
+                        }
+                        break;
+                    case Constants.MESSAGE_WRITE:
+                        byte[] writeBuf = (byte[]) msg.obj;
+                        String writeMessage = new String(writeBuf);
+                        sendTextView.setText("");
+                        sendTextView.setText(writeMessage);
+                        break;
+                    case Constants.MESSAGE_STATE_CHANGE:
+                        switch (msg.arg1) {
+                            case BluetoothVehicleService.STATE_CONNECTED:
+                                // Send Default commands
+                                // sendOBD2CMD("AT SP 0", Response.NONE);
+                                Toast.makeText(getApplicationContext(), "sending init commands", Toast.LENGTH_SHORT).show();
+                                break;
+                        }
+                        break;
+                    case BluetoothVehicleService.STATE_BT_SOCKET_AVAILABLE:
+                        // Init commands
+                        mCommandJobs = new ArrayList<>();
+                        mCommandList = new LinkedBlockingQueue<>();
 
-                                    Double value = VehStats.getValue(response, new Formula() {
-                                        @Override
-                                        public double calculate(int a, int b, int c, int d) {
-                                            return  ((a * 256.00) + b) / 4.00;
-                                        }
-                                    });
-                                    valueTextView.setText(value+"");
-                                    break;
-                            }
-                            break;
-                        case Constants.MESSAGE_WRITE:
-                            byte[] writeBuf = (byte[]) msg.obj;
-                            String writeMessage = new String(writeBuf);
-                            sendTextView.setText("");
-                            sendTextView.setText(writeMessage);
-                            break;
-                        case Constants.MESSAGE_STATE_CHANGE:
-                            switch (msg.arg1) {
-                                case BluetoothVehicleService.STATE_CONNECTED:
-                                    // Send Default commands
-                                    // sendOBD2CMD("AT SP 0", Response.NONE);
-                                    Toast.makeText(getApplicationContext(), "sending init commands", Toast.LENGTH_SHORT).show();
-                                    break;
-                            }
-                            break;
-                        case BluetoothVehicleService.STATE_BT_SOCKET_AVAILABLE:
-                            // Init commands
-                            mCommandJobs = new ArrayList<>();
-                            mCommandList = new LinkedBlockingQueue<>();
+                        BluetoothSocket socket = (BluetoothSocket) msg.obj;
 
-                            BluetoothSocket socket = (BluetoothSocket) msg.obj;
+                        // Add commands
+                        Log.i(TAG, "Init commands ... ");
+                        try {
+                            mCommandList.put(new CommandJob(socket, new AutoProtocolCommand(mHandler)));
+                            mCommandList.put(new CommandJob(socket, new RpmCommand(mHandler)));
+                            mCommandList.put(new CommandJob(socket, new VehicleSpeedCommand(mHandler)));
+                            mCommandList.put(new CommandJob(socket, new Throttle(mHandler)));
+//                                mCommandList.add(new CommandJob(socket, new EchoOffCommand(mHandler)));
+                        } catch (InterruptedException e) {
+                            Log.e(TAG, "PUT Interrupted");
+                            e.printStackTrace();
+                        }
 
-                            // Add commands
-                            Log.i(TAG, "Init commands ... ");
-//                            mCommandJobs.add(new CommandJob(socket, new AutoProtocolCommand(mHandler)));
-//                            mCommandJobs.add(new CommandJob(socket, new EchoOffCommand(mHandler)));
-//                            mCommandJobs.add(new CommandJob(socket, new RpmCommand(mHandler)));
+                        performCommands();
 
-                            mCommandList.add(new CommandJob(socket, new AutoProtocolCommand(mHandler)));
-                            mCommandList.add(new CommandJob(socket, new RpmCommand(mHandler)));
-                            mCommandList.add(new CommandJob(socket, new VehicleSpeedCommand(mHandler)));
-                            mCommandList.add(new CommandJob(socket, new Throttle(mHandler)));
-//                            mCommandList.add(new CommandJob(socket, new EchoOffCommand(mHandler)));
-
-//                            mExecutor = Executors.newFixedThreadPool(mCommandJobs.size());
-
-//                            for (CommandJob job : mCommandJobs) {
-//                                mExecutor.execute(job);
-//                            }
-
-                            while (mCommandList.size() > 0) {
-                                CommandJob job =  mCommandList.poll();
-                                job.start();
-//                                mCommandList.add(job);
-                            }
-
-                            break;
-                    }
+                        break;
+                     default:
+                         // Do nothing
+                         break;
                 }
             }
         };
@@ -253,6 +242,20 @@ public class MainActivity extends AppCompatActivity {
         return null;
     }
 
+    private void performCommands() {
+        while (mCommandList.size() > 0) {
+            CommandJob job = null;
+
+            try {
+                job = mCommandList.take();
+                job.start();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
     private void createAlertDialog(String title, String message) {
         AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
         alertBuilder.setTitle(title);
@@ -268,5 +271,14 @@ public class MainActivity extends AppCompatActivity {
         });
         AlertDialog alert = alertBuilder.create();
         alert.show();
+    }
+
+    private void displayRespToLogcat(Response response) {
+        Log.i(TAG, response.getResponse());
+
+        Log.i(TAG, "A: "+response.getA());
+        Log.i(TAG, "B: "+response.getB());
+        Log.i(TAG, "C: "+response.getC());
+        Log.i(TAG, "D: "+response.getD());
     }
 }
