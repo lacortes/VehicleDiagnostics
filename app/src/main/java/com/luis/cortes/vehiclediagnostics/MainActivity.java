@@ -31,6 +31,7 @@ import com.luis.cortes.vehiclediagnostics.Commands.VehicleSpeedCommand;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -46,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private Handler mHandler;
     private Executor mExecutor;
     private ArrayList<CommandJob> mCommandJobs;
-    private ConcurrentLinkedDeque<CommandJob> mCommandList;
+    private ConcurrentLinkedQueue<CommandJob> mCommandList;
 
     // Views
     private int progressStatus = 0;
@@ -128,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
                         case BluetoothVehicleService.STATE_BT_SOCKET_AVAILABLE:
                             // Init commands
                             mCommandJobs = new ArrayList<>();
-                            mCommandList = new ConcurrentLinkedDeque<>();
+                            mCommandList = new ConcurrentLinkedQueue<>();
 
                             BluetoothSocket socket = (BluetoothSocket) msg.obj;
 
