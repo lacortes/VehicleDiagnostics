@@ -12,7 +12,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center">
+        android:gravity="center"
+        android:layout_marginBottom="15dp">
 
         <TextView
             android:id="@+id/value_rpm_text_view"
@@ -20,8 +21,7 @@
             android:layout_height="wrap_content"
             android:layout_marginRight="15dp"
             android:text="Rpm"
-            android:textSize="40dp"
-            android:layout_marginBottom="30dp"/>
+            android:textSize="40dp" />
 
         <TextView
             android:id="@+id/value_speed_text_view"
@@ -29,32 +29,16 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="15dp"
             android:text="Speed"
-            android:textSize="40dp"
-            android:layout_marginBottom="30dp"/>
+            android:textSize="40dp" />
 
     </LinearLayout>
-
-
-
-    <TextView
-        android:id="@+id/send_text_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Send Message"
-        android:layout_marginBottom="30dp"/>
-
-    <TextView
-        android:id="@+id/text_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!"/>
 
     <Button
         android:id="@+id/send_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:text="Send Request"/>
+        android:text="Connect"/>
     
     
 
