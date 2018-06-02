@@ -21,6 +21,7 @@ public class Response {
     public static final String ECHO_OFF = "ECHO_OFF";
     public static final String SPEED = "0D";
     public static final String THROTTLE = "11";
+    public static final String RESET = "RESET";
 
     private String[] validResponseModes = {"41"};
     private String response;
@@ -96,37 +97,17 @@ public class Response {
         Log.i(TAG, "EXTRACTING : "+cleanResponse);
         if (cleanResponse.length() <= 4) return;
 
-        String field;
-        if (cleanResponse.length() == 6) {
-            Log.i(TAG, "A: "+cleanResponse.substring(4, 6));
-            field = cleanResponse.substring(4, 6);
-            this.A = Integer.valueOf(field, 16);
-        } else {
-            this. A = 0;
+        int[] buffer = {0, 0, 0, 0};  // Hold A, B, C, D
+
+        for (int i = 0, start = 4; start <= cleanResponse.length() - 2; i++, start += 2) {
+            String field = cleanResponse.substring(start, start + 2);
+            buffer[i] = Integer.valueOf(field, 16);
         }
 
-        if (cleanResponse.length() == 8) {
-            Log.i(TAG, "A: "+cleanResponse.substring(6, 8));
-            field = cleanResponse.substring(6, 8);
-            this.B = Integer.valueOf(field, 16);
-        } else {
-            this.B = 0;
-        }
-
-        if (cleanResponse.length() == 10) {
-            Log.i(TAG, "A: "+cleanResponse.substring(8, 10));
-            field = cleanResponse.substring(8, 10);
-            this.C = Integer.valueOf(field, 16);
-        } else {
-            this.C = 0;
-        }
-
-        if (cleanResponse.length() == 12) {
-            field = cleanResponse.substring(10, 12);
-            this.D = Integer.valueOf(field, 16);
-        } else {
-            this.D = 0;
-        }
+        this.A = buffer[0];
+        this.B = buffer[1];
+        this.C = buffer[2];
+        this.D = buffer[3];
 
     }
 

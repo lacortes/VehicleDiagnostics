@@ -29,6 +29,10 @@ public abstract class ObdCommand {
 
     private ObdCommand() { }
 
+    public void setResponseDelayInMs(Long responseDelayInMs) {
+        this.responseDelayInMs = responseDelayInMs;
+    }
+
     public void run(InputStream inputStream, OutputStream outputStream) {
         synchronized (ObdCommand.class) {
             sendCommand(outputStream);
@@ -43,10 +47,27 @@ public abstract class ObdCommand {
             outputStream.write(buffer);
             outputStream.flush();
 
+            if (responseDelayInMs != null && responseDelayInMs > 0) {
+                try {
+                    Thread.sleep(responseDelayInMs);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+
+                }
+            }
             // Share the sent message back to the UI Activity
             shareToHandler(this.handler, Constants.MESSAGE_WRITE, buffer.length ,buffer);
         } catch (IOException e) {
             Log.i(TAG, "Exception during write", e);
+        }
+    }
+
+    public void resendCommand(OutputStream outputStream) {
+        try {
+            outputStream.write("\r".getBytes());
+            outputStream.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -83,7 +104,7 @@ public abstract class ObdCommand {
                 res.append(c);
             }
             Log.i(TAG, res.toString());
-            Log.i(TAG, "***\n");
+            Log.i(TAG, "***");
 
             if (isProtocol) {return;}
 

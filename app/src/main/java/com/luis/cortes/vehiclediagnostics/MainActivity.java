@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity.class";
@@ -47,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private Handler mHandler;
     private Executor mExecutor;
     private ArrayList<CommandJob> mCommandJobs;
-    private ConcurrentLinkedQueue<CommandJob> mCommandList;
+    private LinkedBlockingQueue<CommandJob> mCommandList;
 
     // Views
     private int progressStatus = 0;
@@ -129,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
                         case BluetoothVehicleService.STATE_BT_SOCKET_AVAILABLE:
                             // Init commands
                             mCommandJobs = new ArrayList<>();
-                            mCommandList = new ConcurrentLinkedQueue<>();
+                            mCommandList = new LinkedBlockingQueue<>();
 
                             BluetoothSocket socket = (BluetoothSocket) msg.obj;
 
