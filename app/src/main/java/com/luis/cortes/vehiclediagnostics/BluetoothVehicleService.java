@@ -13,6 +13,7 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.TreeMap;
 
 
 /**
@@ -25,6 +26,8 @@ public class BluetoothVehicleService {
     public static final int STATE_LISTEN = 1;     // now listening for incoming connections
     public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
+    public static final int STATE_BT_SOCKET_AVAILABLE = 4; // Bt socket available
+    public static final int STATE_BT_SOCKET_ERROR = 5; // Problem connecting to socket
 
     private static final String TAG = "BluetoothVehicleService";
     private final BluetoothAdapter mAdapter;
@@ -34,6 +37,7 @@ public class BluetoothVehicleService {
     private StreamThread mStreamThread;
     private int mState;
     private int mNewState;
+    private BluetoothSocket mSocket;
 
     public BluetoothVehicleService(Context context, Handler handler) {
         this.mContext = context;
@@ -48,6 +52,13 @@ public class BluetoothVehicleService {
         mConnectThread.start();
     }
 
+    public boolean hasSocket() {
+        return mSocket != null;
+    }
+
+    public BluetoothSocket getSocket() {
+        return this.mSocket;
+    }
 
     public void stream(BluetoothSocket socket, BluetoothDevice device) {
         // Start the thread to manage the connection and perform transmissions
@@ -62,12 +73,12 @@ public class BluetoothVehicleService {
      *
      * @param out The bytes to write
      */
-    public void write(byte[] out) {
+    public void write(byte[] out, String type) {
         // Create temporary object
         StreamThread r = mStreamThread;
 
         // Perform the write unsynchronized
-        r.write(out);
+        r.write(out, type);
     }
 
     public int getState() {
@@ -134,7 +145,13 @@ public class BluetoothVehicleService {
 
             // Start the connected thread
             // connected(mmDeviceSocket, mmDevice);
-            stream(mmDeviceSocket, mmDevice);
+            mSocket = mmDeviceSocket;
+            if (hasSocket()) {
+                mHandler.obtainMessage(STATE_BT_SOCKET_AVAILABLE, -1, -1, mSocket).sendToTarget();
+            } else {
+                mHandler.obtainMessage(STATE_BT_SOCKET_ERROR, -1, -1).sendToTarget();
+            }
+            // stream(mmDeviceSocket, mmDevice);
         }
 
         public void cancel() {
@@ -177,6 +194,7 @@ public class BluetoothVehicleService {
             int bytes;
 
             // Keep listening to the InputStream while connected
+            // TODO: change this condition to check for state
             while (true) {
                 try {
                     // Read from the InputStream
@@ -199,14 +217,14 @@ public class BluetoothVehicleService {
          * Write to the connected OutStream.
          * @param buffer The bytes to write
          */
-        public void write(byte[] buffer) {
+        public void write(byte[] buffer, String type) {
             try {
                 mmOutStream.write(buffer);
+                mmOutStream.flush();
 
                 // Share the sent message back to the UI Activity
 
-//                mHandler.obtainMessage(Constants.MESSAGE_READ, buffer).sendToTarget();
-                mHandler.obtainMessage(Constants.MESSAGE_WRITE, -1, -1, buffer).sendToTarget();
+                mHandler.obtainMessage(Constants.MESSAGE_WRITE, type.hashCode(), -1, buffer).sendToTarget();
             } catch (IOException e) {
                 Log.i(TAG, "Exception during write", e);
             }
