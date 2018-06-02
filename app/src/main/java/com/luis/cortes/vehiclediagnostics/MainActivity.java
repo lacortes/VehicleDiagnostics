@@ -46,8 +46,6 @@ public class MainActivity extends AppCompatActivity {
 
     // Views
     private int progressStatus = 0;
-    private TextView textBoxOut;
-    private TextView sendTextView;
     private TextView rpmTextView;
     private TextView speedTextView;
     private Button sendButton;
@@ -58,8 +56,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Hook up Views
-        textBoxOut =  (TextView) findViewById(R.id.text_view);
-        sendTextView = (TextView) findViewById(R.id.send_text_view);
         rpmTextView =  (TextView) findViewById(R.id.value_rpm_text_view);
         speedTextView = (TextView) findViewById(R.id.value_speed_text_view);
         sendButton = (Button) findViewById(R.id.send_button);
@@ -111,8 +107,7 @@ public class MainActivity extends AppCompatActivity {
                     case Constants.MESSAGE_WRITE:
                         byte[] writeBuf = (byte[]) msg.obj;
                         String writeMessage = new String(writeBuf);
-                        sendTextView.setText("");
-                        sendTextView.setText(writeMessage);
+
                         break;
                     case Constants.MESSAGE_STATE_CHANGE:
                         switch (msg.arg1) {
