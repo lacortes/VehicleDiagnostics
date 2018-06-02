@@ -25,6 +25,8 @@ import android.widget.Toast;
 import com.luis.cortes.vehiclediagnostics.Commands.AutoProtocolCommand;
 import com.luis.cortes.vehiclediagnostics.Commands.EchoOffCommand;
 import com.luis.cortes.vehiclediagnostics.Commands.RpmCommand;
+import com.luis.cortes.vehiclediagnostics.Commands.Throttle;
+import com.luis.cortes.vehiclediagnostics.Commands.VehicleSpeedCommand;
 
 import java.util.ArrayList;
 import java.util.Set;
@@ -138,7 +140,8 @@ public class MainActivity extends AppCompatActivity {
 
                             mCommandList.add(new CommandJob(socket, new AutoProtocolCommand(mHandler)));
                             mCommandList.add(new CommandJob(socket, new RpmCommand(mHandler)));
-                            mCommandList.add(new CommandJob(socket, new RpmCommand(mHandler)));
+                            mCommandList.add(new CommandJob(socket, new VehicleSpeedCommand(mHandler)));
+                            mCommandList.add(new CommandJob(socket, new Throttle(mHandler)));
 //                            mCommandList.add(new CommandJob(socket, new EchoOffCommand(mHandler)));
 
 //                            mExecutor = Executors.newFixedThreadPool(mCommandJobs.size());

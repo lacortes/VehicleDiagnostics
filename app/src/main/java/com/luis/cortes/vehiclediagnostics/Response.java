@@ -19,6 +19,8 @@ public class Response {
     public static final String RPM = "0C";
     public static final String AUTO = "AUTO";
     public static final String ECHO_OFF = "ECHO_OFF";
+    public static final String SPEED = "0D";
+    public static final String THROTTLE = "11";
 
     private String[] validResponseModes = {"41"};
     private String response;
