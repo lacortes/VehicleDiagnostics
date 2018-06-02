@@ -9,13 +9,32 @@
     android:gravity="center"
     tools:context="com.luis.cortes.vehiclediagnostics.MainActivity">
 
-    <TextView
-        android:id="@+id/value_text_view"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Value"
-        android:textSize="40dp"
-        android:layout_marginBottom="30dp"/>
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/value_rpm_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="15dp"
+            android:text="Rpm"
+            android:textSize="40dp"
+            android:layout_marginBottom="30dp"/>
+
+        <TextView
+            android:id="@+id/value_speed_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="15dp"
+            android:text="Speed"
+            android:textSize="40dp"
+            android:layout_marginBottom="30dp"/>
+
+    </LinearLayout>
+
+
 
     <TextView
         android:id="@+id/send_text_view"
