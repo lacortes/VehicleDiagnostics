@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.v7.widget.LinearLayoutCompat
+    xmlns:gauge="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -10,36 +11,80 @@
     tools:context="com.luis.cortes.vehiclediagnostics.MainActivity">
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:layout_marginBottom="15dp">
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="2">
 
         <TextView
             android:id="@+id/value_rpm_text_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginRight="15dp"
+            android:layout_gravity="center_vertical"
             android:text="Rpm"
             android:textSize="40dp" />
+
+        <de.nitri.gauge.Gauge
+            android:id="@+id/rpm_gauge"
+            android:layout_width="235dp"
+            android:layout_height="235dp"
+            android:layout_gravity="center_vertical"
+            gauge:majorNickInterval="1000"
+            gauge:lowerText="RPM"
+            gauge:initialValue="0"
+            gauge:maxValue="8000"
+            gauge:minValue="0"
+            gauge:totalNicks="10000"
+            gauge:valuePerNick="1" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="2"
+        android:gravity="top">
 
         <TextView
             android:id="@+id/value_speed_text_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="15dp"
-            android:text="Speed"
+            android:layout_gravity="center_vertical"
+            android:layout_marginBottom="15dp"
+            android:text="Mph"
             android:textSize="40dp" />
+
+        <de.nitri.gauge.Gauge
+            android:id="@+id/speed_gauge"
+            android:layout_width="235dp"
+            android:layout_height="235dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginBottom="15dp"
+            gauge:majorNickInterval="10"
+            gauge:initialValue="0"
+            gauge:maxValue="160"
+            gauge:minValue="0"
+            gauge:totalNicks="180"
+            gauge:lowerText="Mph"
+            gauge:valuePerNick="1" />
+
 
     </LinearLayout>
 
-    <Button
-        android:id="@+id/send_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="Connect"/>
-    
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.5"
+        android:gravity="center_horizontal">
+
+        <Button
+            android:id="@+id/send_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Connect"/>
+
+    </LinearLayout>
+
     
 
 </android.support.v7.widget.LinearLayoutCompat>
