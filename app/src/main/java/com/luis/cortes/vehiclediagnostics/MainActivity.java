@@ -27,9 +27,12 @@ import com.luis.cortes.vehiclediagnostics.Commands.RpmCommand;
 import com.luis.cortes.vehiclediagnostics.Commands.Throttle;
 import com.luis.cortes.vehiclediagnostics.Commands.VehicleSpeedCommand;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import de.nitri.gauge.Gauge;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity.class";
@@ -46,11 +49,11 @@ public class MainActivity extends AppCompatActivity {
 
     // Views
     private int progressStatus = 0;
-    private TextView textBoxOut;
-    private TextView sendTextView;
     private TextView rpmTextView;
     private TextView speedTextView;
-    private Button sendButton;
+    private Button connectButton;
+    private Gauge speedGauge;
+    private Gauge rpmGauge;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,13 +61,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Hook up Views
-        textBoxOut =  (TextView) findViewById(R.id.text_view);
-        sendTextView = (TextView) findViewById(R.id.send_text_view);
         rpmTextView =  (TextView) findViewById(R.id.value_rpm_text_view);
         speedTextView = (TextView) findViewById(R.id.value_speed_text_view);
-        sendButton = (Button) findViewById(R.id.send_button);
+        connectButton = (Button) findViewById(R.id.send_button);
+        speedGauge = (Gauge) findViewById(R.id.speed_gauge);
+        rpmGauge = (Gauge) findViewById(R.id.rpm_gauge);
 
-        sendButton.setOnClickListener(new View.OnClickListener() {
+        connectButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 connectToDongle();
@@ -93,7 +96,9 @@ public class MainActivity extends AppCompatActivity {
                                         return ((a * 256.00) + b) / 4.00;
                                     }
                                 });
-                                rpmTextView.setText(rpm + "");
+                                BigDecimal rpNum = new BigDecimal(rpm);
+                                rpmTextView.setText(rpm.intValue() + "");
+                                rpmGauge.moveToValue(rpNum.floatValue());
                                 break;
                             case Constants.RESPONSE_SPEED:
                                 Log.i(TAG, "Reading Speed ... ");
@@ -104,15 +109,16 @@ public class MainActivity extends AppCompatActivity {
                                         return a * 0.621371;
                                     }
                                 });
-                                speedTextView.setText(speed + "");
+                                BigDecimal spNum = new BigDecimal(speed);
+                                speedTextView.setText(spNum.intValue() + "");
+                                speedGauge.moveToValue(spNum.floatValue());
                                 break;
                         }
                         break;
                     case Constants.MESSAGE_WRITE:
                         byte[] writeBuf = (byte[]) msg.obj;
                         String writeMessage = new String(writeBuf);
-                        sendTextView.setText("");
-                        sendTextView.setText(writeMessage);
+
                         break;
                     case Constants.MESSAGE_STATE_CHANGE:
                         switch (msg.arg1) {
@@ -124,6 +130,10 @@ public class MainActivity extends AppCompatActivity {
                         }
                         break;
                     case BluetoothVehicleService.STATE_BT_SOCKET_AVAILABLE:
+                        // Disable Connect button
+                        connectButton.setClickable(false);
+                        connectButton.setText("Connected");
+
                         // Init commands
                         mCommandJobs = new ArrayList<>();
                         mCommandList = new LinkedBlockingQueue<>();
